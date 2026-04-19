@@ -153,14 +153,19 @@ function detectHighImpactFiles(reverseAdjacency, threshold = 3) {
  * Analyse code quality / consistency and return a score 0-100.
  */
 function calculateConsistencyScore(files) {
-  const issues = [];
-  let totalScore = 100;
+  let issuesData = { critical: 0, warning: 0, good: 0 };
+  let suggestions = [];
+
+  let cleanliness = 100;
+  let complexity = 100;
+  let structure = 100;
+  let naming = 100;
 
   if (files.length === 0) {
-    return { score: 0, issues: ['Repository has no analysable files'] };
+    return { overall: 0, cleanliness: 0, complexity: 0, structure: 0, naming: 0, issues: issuesData, suggestions: ['Repository is entirely empty'] };
   }
 
-  // 1. Naming convention check
+  // 1. Naming convention
   const namingStyles = { camelCase: 0, snake_case: 0, PascalCase: 0, other: 0 };
   for (const f of files) {
     const basename = path.posix.basename(f.path, path.posix.extname(f.path));
@@ -169,131 +174,94 @@ function calculateConsistencyScore(files) {
     else if (/^[A-Z][a-zA-Z0-9]*$/.test(basename)) namingStyles.PascalCase++;
     else namingStyles.other++;
   }
-
   const namingValues = Object.values(namingStyles).filter((v) => v > 0);
   if (namingValues.length > 2) {
-    totalScore -= 10;
-    issues.push(
-      `Inconsistent file naming: mixed conventions detected (${Object.entries(namingStyles)
-        .filter(([, v]) => v > 0)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(', ')})`
-    );
+    naming -= 30;
+    issuesData.warning++;
+    suggestions.push(`Improve file naming consistency (mixed casing detected)`);
+  } else if (namingValues.length === 1) {
+    issuesData.good++;
   }
 
-  // 2. Comment density
-  let totalLines = 0;
-  let commentLines = 0;
-  for (const f of files) {
-    const lines = f.content.split('\n');
-    totalLines += lines.length;
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (
-        trimmed.startsWith('//') ||
-        trimmed.startsWith('#') ||
-        trimmed.startsWith('/*') ||
-        trimmed.startsWith('*')
-      ) {
-        commentLines++;
-      }
-    }
-  }
-
-  const commentRatio = totalLines > 0 ? commentLines / totalLines : 0;
-  if (commentRatio < 0.05) {
-    totalScore -= 10;
-    issues.push(
-      `Low comment density (${(commentRatio * 100).toFixed(1)}%) – consider adding documentation`
-    );
-  } else if (commentRatio > 0.4) {
-    totalScore -= 5;
-    issues.push(
-      `Very high comment density (${(commentRatio * 100).toFixed(1)}%) – may indicate commented-out code`
-    );
-  }
-
-  // 3. File size uniformity
-  const sizes = files.map((f) => f.content.length);
-  const avgSize = sizes.reduce((a, b) => a + b, 0) / sizes.length;
-  const oversizedFiles = files.filter((f) => f.content.length > avgSize * 4);
-  if (oversizedFiles.length > 0) {
-    totalScore -= 8;
-    issues.push(
-      `${oversizedFiles.length} file(s) are significantly larger than average – consider splitting: ${oversizedFiles
-        .slice(0, 3)
-        .map((f) => f.path)
-        .join(', ')}`
-    );
-  }
-
-  // 4. Duplicate / near-duplicate detection (simple hash-based)
-  const contentHashes = new Map();
-  for (const f of files) {
-    // Simple hash: first 200 chars normalised
-    const hash = f.content.replace(/\s+/g, ' ').slice(0, 200);
-    if (contentHashes.has(hash)) {
-      totalScore -= 5;
-      issues.push(
-        `Possible duplicate: ${f.path} ↔ ${contentHashes.get(hash)}`
-      );
-    } else {
-      contentHashes.set(hash, f.path);
-    }
-  }
-
-  // 5. Empty files
-  const emptyFiles = files.filter((f) => f.content.trim().length === 0);
-  if (emptyFiles.length > 0) {
-    totalScore -= 3;
-    issues.push(
-      `${emptyFiles.length} empty file(s) detected: ${emptyFiles
-        .slice(0, 3)
-        .map((f) => f.path)
-        .join(', ')}`
-    );
-  }
-
-  // 6. Console.log / print statement check
+  // 2. Console/Debug 
   let debugStatements = 0;
   for (const f of files) {
     const matches = f.content.match(/console\.(log|debug|warn|error)|print\(/g);
     if (matches) debugStatements += matches.length;
   }
   if (debugStatements > 20) {
-    totalScore -= 5;
-    issues.push(
-      `${debugStatements} debug/print statements found – consider using a proper logger`
-    );
+    cleanliness -= 25;
+    issuesData.warning++;
+    suggestions.push(`Remove excessive debug/console.log statements (${debugStatements} found)`);
+  } else if (debugStatements === 0) {
+    issuesData.good++;
   }
 
-  // 7. TODO / FIXME / HACK check
+  // 3. TODOs & Technical Debt
   let todoCount = 0;
   for (const f of files) {
     const matches = f.content.match(/TODO|FIXME|HACK|XXX/gi);
     if (matches) todoCount += matches.length;
   }
   if (todoCount > 10) {
-    totalScore -= 4;
-    issues.push(`${todoCount} TODO/FIXME/HACK markers found – technical debt detected`);
+    cleanliness -= 15;
+    issuesData.critical++;
+    suggestions.push(`Resolve ${todoCount} pending TODO/FIXME markers`);
+  } else if (todoCount <= 2) {
+    issuesData.good++;
   }
 
-  if (issues.length === 0) {
-    issues.push('No major consistency issues detected – great job! 🎉');
+  // 4. File Structure & Size
+  const sizes = files.map((f) => f.content.length);
+  const avgSize = sizes.reduce((a, b) => a + b, 0) / sizes.length;
+  const oversizedFiles = files.filter((f) => f.content.length > Math.max(avgSize * 4, 3000));
+  if (oversizedFiles.length > 0) {
+    structure -= 20;
+    complexity -= 15;
+    issuesData.critical++;
+    suggestions.push(`Refactor monolithic files into smaller modules (e.g. ${oversizedFiles[0].path.split('/').pop()})`);
+  }
+
+  // 5. Empty / Duplicate Files
+  const emptyFiles = files.filter((f) => f.content.trim().length === 0);
+  if (emptyFiles.length > 0) {
+    structure -= 10;
+    issuesData.warning++;
+    suggestions.push(`Delete ${emptyFiles.length} empty files to clean up architecture`);
+  }
+
+  const contentHashes = new Set();
+  let duplicates = 0;
+  for (const f of files) {
+    const hash = f.content.replace(/\s+/g, ' ').slice(0, 200);
+    if (hash.length > 50) {
+      if (contentHashes.has(hash)) duplicates++;
+      else contentHashes.add(hash);
+    }
+  }
+  if (duplicates > 0) {
+    structure -= 20;
+    complexity -= 10;
+    issuesData.critical++;
+    suggestions.push(`Consolidate ${duplicates} potentially duplicated code blocks`);
+  }
+
+  // Determine overall
+  const overall = Math.round((cleanliness + complexity + structure + naming) / 4);
+
+  if (suggestions.length === 0) {
+    suggestions.push('No major improvements required. Outstanding code quality!');
+    issuesData.good += 2;
   }
 
   return {
-    score: Math.max(0, Math.min(100, totalScore)),
-    issues,
-    stats: {
-      totalFiles: files.length,
-      totalLines,
-      commentLines,
-      commentRatio: `${(commentRatio * 100).toFixed(1)}%`,
-      avgFileSize: Math.round(avgSize),
-      debugStatements,
-      todoCount,
-    },
+    overall: Math.max(0, overall),
+    cleanliness: Math.max(0, cleanliness),
+    complexity: Math.max(0, complexity),
+    structure: Math.max(0, structure),
+    naming: Math.max(0, naming),
+    issues: issuesData,
+    suggestions
   };
 }
 

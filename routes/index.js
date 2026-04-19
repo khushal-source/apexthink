@@ -12,6 +12,7 @@ const traceController = require('../controllers/traceController');
 const scoreController = require('../controllers/scoreController');
 const searchController = require('../controllers/searchController');
 const explainController = require('../controllers/explainController');
+const onboardingController = require('../controllers/onboardingController');
 
 const router = Router();
 
@@ -33,5 +34,6 @@ router.post('/trace', traceController.traceExecution);
 router.get('/score', scoreController.getScore);
 router.get('/search', searchController.search);
 router.post('/explain', explainController.explain);
+router.post('/onboarding', onboardingController.generateOnboarding);
 
 module.exports = router;

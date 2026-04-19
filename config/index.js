@@ -32,7 +32,7 @@ const config = {
 
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     apiBase: 'https://generativelanguage.googleapis.com/v1beta',
   },
 
