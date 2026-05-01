@@ -525,3 +525,89 @@ body, html {
   text-align: center;
   padding: 40px;
 }
+/* -- Responsive Overrides ------------------------------------------- */
+@media (max-width: 1024px) {
+  .score-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+  }
+
+  .sidebar-header {
+    padding: 0 16px 10px;
+    margin-bottom: 10px;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 0 10px;
+    scrollbar-width: thin;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .nav-item {
+    padding: 10px 16px;
+    border-right: none;
+    border-bottom: 3px solid transparent;
+  }
+
+  .nav-item:hover, .nav-item.active {
+    border-right: none;
+    border-bottom: 3px solid var(--accent);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .top-bar {
+    padding: 0 16px;
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 60px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .repo-badge {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .score-main-card {
+    flex-direction: column;
+    padding: 24px;
+    gap: 24px;
+    text-align: center;
+  }
+
+  .chat-input-area {
+    flex-direction: column;
+  }
+
+  .chat-send-btn {
+    width: 100%;
+  }
+
+  .feature-page {
+    padding: 16px;
+  }
+
+  .chat-message {
+    max-width: 90%;
+  }
+}

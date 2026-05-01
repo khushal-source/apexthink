@@ -319,6 +319,7 @@ html, body {
   pointer-events: none;
   transition: opacity 0.4s ease, transform 0.4s ease;
   text-align: right;
+  transform: translateY(calc(-50% - var(--prog, 0px)));
 }
 
 .model-title {
@@ -351,7 +352,7 @@ html, body {
     right: auto;
     left: 50%;
     top: 15%;
-    transform: translateX(-50%);
+    transform: translate(-50%, calc(-15% - var(--prog, 0px)));
     align-items: center;
     width: 90vw;
     text-align: center;

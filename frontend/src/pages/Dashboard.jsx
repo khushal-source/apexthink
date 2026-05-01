@@ -114,23 +114,25 @@ export default function Dashboard() {
           Apex Think
         </div>
         
-        <div className={"nav-item " + (activeTab === 'graph' ? 'active' : '')} onClick={() => setActiveTab('graph')}>
-          <Network size={18} /> Architecture Graph
-        </div>
-        <div className={"nav-item " + (activeTab === 'chat' ? 'active' : '')} onClick={() => setActiveTab('chat')}>
-          <MessageSquare size={18} /> AI Chatbot
-        </div>
-        <div className={"nav-item " + (activeTab === 'onboarding' ? 'active' : '')} onClick={() => setActiveTab('onboarding')}>
-          <BookOpen size={18} /> Learning Path
-        </div>
-        <div className={"nav-item " + (activeTab === 'history' ? 'active' : '')} onClick={() => setActiveTab('history')}>
-          <GitBranch size={18} /> Git History
-        </div>
-        <div className={"nav-item " + (activeTab === 'trace' ? 'active' : '')} onClick={() => setActiveTab('trace')}>
-          <Activity size={18} /> Code Trace
-        </div>
-        <div className={"nav-item " + (activeTab === 'score' ? 'active' : '')} onClick={() => setActiveTab('score')}>
-          <CheckCircle size={18} /> Code Rating
+        <div className="sidebar-nav">
+          <div className={"nav-item " + (activeTab === 'graph' ? 'active' : '')} onClick={() => setActiveTab('graph')}>
+            <Network size={18} /> Architecture Graph
+          </div>
+          <div className={"nav-item " + (activeTab === 'chat' ? 'active' : '')} onClick={() => setActiveTab('chat')}>
+            <MessageSquare size={18} /> AI Chatbot
+          </div>
+          <div className={"nav-item " + (activeTab === 'onboarding' ? 'active' : '')} onClick={() => setActiveTab('onboarding')}>
+            <BookOpen size={18} /> Learning Path
+          </div>
+          <div className={"nav-item " + (activeTab === 'history' ? 'active' : '')} onClick={() => setActiveTab('history')}>
+            <GitBranch size={18} /> Git History
+          </div>
+          <div className={"nav-item " + (activeTab === 'trace' ? 'active' : '')} onClick={() => setActiveTab('trace')}>
+            <Activity size={18} /> Code Trace
+          </div>
+          <div className={"nav-item " + (activeTab === 'score' ? 'active' : '')} onClick={() => setActiveTab('score')}>
+            <CheckCircle size={18} /> Code Rating
+          </div>
         </div>
       </div>
 
@@ -149,8 +151,8 @@ export default function Dashboard() {
           )}
           <div style={{ flex: 1 }}></div>
           
-          <div className="search-container" style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px 10px' }}>
-            <Search size={14} color="var(--text-muted)" style={{ marginRight: '8px' }} />
+          <div className="search-container" style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px 10px', flex: 1, minWidth: '150px' }}>
+            <Search size={14} color="var(--text-muted)" style={{ marginRight: '8px', flexShrink: 0 }} />
             <input 
               value={searchQuery}
               onChange={e => {
@@ -158,7 +160,7 @@ export default function Dashboard() {
                 if (activeTab !== 'graph') setActiveTab('graph'); 
               }}
               placeholder="Search files..."
-              style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.85rem', width: '220px' }}
+              style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.85rem', width: '100%' }}
             />
           </div>
         </div>

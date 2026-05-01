@@ -205,7 +205,7 @@ export default function LandingPage() {
       <div className="ambient-glow" style={{ opacity: lerp(0.3, 0.7, smoothstep(0.15, 0.45, progress)) }} />
       <div className="scene-dimmer" style={{ opacity: dimmer }} />
       
-      <div className="right-panel" style={{ opacity: rightPanelOp, transform: "translateY(calc(-50% - " + (progress * 150) + "px))" }}>
+      <div className="right-panel" style={{ opacity: rightPanelOp, '--prog': progress * 150 + 'px' }}>
         <h1 className="model-title">APEX THINK</h1>
         <p className="model-tagline">Understand large codebases quickly with AI-powered graphs and chat.</p>
       </div>
