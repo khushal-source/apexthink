@@ -1,14 +1,14 @@
 {
-  "name": "codemap-ai-backend",
+  "name": "apex-think",
   "version": "1.0.0",
-  "description": "CodeMap AI – Advanced Repository Intelligence Platform",
-  "main": "app.js",
+  "description": "Apex Think – AI Repository Intelligence",
+  "main": "backend/app.js",
   "scripts": {
     "start": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "node app.js",
+    "server": "node backend/app.js",
     "client": "npm run dev --prefix frontend",
     "postinstall": "cd frontend && npm install",
-    "dev": "nodemon app.js"
+    "dev": "nodemon backend/app.js"
   },
   "keywords": [
     "github",

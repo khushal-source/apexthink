@@ -3,15 +3,9 @@ import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 import '../landing.css';
 
-/* ── Helpers ───────────────────────────────────────────────── */
-const lerp = (a, b, t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-const smoothstep = (e0, e1, x) => {
-  const t = clamp((x - e0) / (e1 - e0), 0, 1);
-  return t * t * (3 - 2 * t);
-};
-const easeOut = t => 1 - Math.pow(1 - t, 4);
+import { lerp, clamp, smoothstep, easeOut } from '../utils/animations';
 
+// quick fix for scroll length, can improve later
 const MAX_SCROLL = 2400;
 
 export default function LandingPage() {
@@ -213,14 +207,14 @@ export default function LandingPage() {
       
       <div className="right-panel" style={{ opacity: rightPanelOp, transform: "translateY(calc(-50% - " + (progress * 150) + "px))" }}>
         <h1 className="model-title">APEX THINK</h1>
-        <p className="model-tagline">AI that decodes codebases into clear, navigable system intelligence.</p>
+        <p className="model-tagline">Understand large codebases quickly with AI-powered graphs and chat.</p>
       </div>
 
       <div className="card-container" style={{ opacity: cardT, transform: "translateY(" + lerp(80, 0, cardT) + "px)", filter: "blur(" + lerp(14, 0, cardT) + "px)", pointerEvents: cardT > 0.4 ? 'auto' : 'none' }}>
         <div className="core-card">
           <div className="card-header">
-            <h2 className="card-title">Access the Core</h2>
-            <p className="card-subtitle">Paste a GitHub repository to begin synchronization</p>
+            <h2 className="card-title">Analyze your repo</h2>
+            <p className="card-subtitle">Paste a GitHub repository to start analysis</p>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="input-group">
@@ -233,7 +227,7 @@ export default function LandingPage() {
               </button>
             </div>
           </form>
-          {isSubmitted && <p className="success-msg">✦ Repository synchronization complete</p>}
+          {isSubmitted && <p className="success-msg">✅ Analysis started...</p>}
         </div>
       </div>
 

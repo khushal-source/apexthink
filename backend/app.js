@@ -1,6 +1,6 @@
 /**
  * ══════════════════════════════════════════════════
- *  CodeMap AI – Advanced Repository Intelligence
+ *  Apex Think – Advanced Repository Intelligence
  *  Main Application Entry Point
  * ══════════════════════════════════════════════════
  */
@@ -46,7 +46,7 @@ app.use('/api', routes);
 // ─── Root ───
 app.get('/', (_req, res) => {
   res.json({
-    name: 'CodeMap AI',
+    name: 'Apex Think',
     tagline: 'Advanced Repository Intelligence Platform',
     version: '1.0.0',
     endpoints: {
@@ -101,7 +101,7 @@ app.listen(config.port, () => {
   console.log(`
   ╔══════════════════════════════════════════════════╗
   ║                                                  ║
-  ║   🧠  CodeMap AI – Repository Intelligence       ║
+  ║   🧠  Apex Think – Repository Intelligence         ║
   ║                                                  ║
   ║   🚀  Server running on port ${String(config.port).padEnd(5)}              ║
   ║   📡  http://localhost:${config.port}                     ║
