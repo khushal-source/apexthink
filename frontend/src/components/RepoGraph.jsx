@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ReactFlow, Background, useNodesState, useEdgesState, ReactFlowProvider, BackgroundVariant } from '@xyflow/react';
 import { Activity } from 'lucide-react';
 import { fetchExplanation } from '../services/api';
 import '@xyflow/react/dist/style.css';
+
+// Mobile detection hook
+const useIsMobile = () => window.innerWidth < 768;
 
 // Utility to figure out what kind of file this is based on imports/exports
 const analyzeNodes = (nodes, edges) => {
@@ -49,6 +52,7 @@ const analyzeNodes = (nodes, edges) => {
 const GraphViewInner = ({ data, searchQuery, onNodeClick, selectedNode, repoUrl }) => {
   const [nodeDetails, setNodeDetails] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const isMobile = useIsMobile();
 
   // Derive graph categories
   const graphAnalysis = useMemo(() => {
@@ -59,17 +63,23 @@ const GraphViewInner = ({ data, searchQuery, onNodeClick, selectedNode, repoUrl 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // Initial load
+  // Initial load — limit nodes on mobile for performance
   useEffect(() => {
     if (!data || !data.dependencyGraph) return;
 
-    const validNodes = Array.isArray(data.dependencyGraph.nodes) ? data.dependencyGraph.nodes : [];
+    let validNodes = Array.isArray(data.dependencyGraph.nodes) ? data.dependencyGraph.nodes : [];
     const validEdgesRaw = Array.isArray(data.dependencyGraph.edges) ? data.dependencyGraph.edges : [];
+
+    // On mobile, cap at 30 nodes to prevent lag
+    if (isMobile && validNodes.length > 30) {
+      validNodes = validNodes.slice(0, 30);
+    }
+
     const validEdges = validEdgesRaw.filter(e => validNodes.includes(e.from) && validNodes.includes(e.to));
 
     const cols = Math.ceil(Math.sqrt(validNodes.length));
-    const horizontalSpacing = 350;
-    const verticalSpacing = 200;
+    const horizontalSpacing = isMobile ? 220 : 350;
+    const verticalSpacing = isMobile ? 140 : 200;
 
     const initialNodes = validNodes.map((nodeId, idx) => {
       const xPos = (idx % cols) * horizontalSpacing;
@@ -78,7 +88,8 @@ const GraphViewInner = ({ data, searchQuery, onNodeClick, selectedNode, repoUrl 
       return {
         id: nodeId,
         position: { x: xPos, y: yPos },
-        style: { animationDelay: (idx * 0.05) + 's' },
+        // Skip staggered animations on mobile
+        style: isMobile ? {} : { animationDelay: (idx * 0.05) + 's' },
         className: "react-flow__node-custom", 
         data: { label: null }
       };
@@ -89,14 +100,14 @@ const GraphViewInner = ({ data, searchQuery, onNodeClick, selectedNode, repoUrl 
         id: "e-" + e.from + "-" + e.to + "-" + idx,
         source: e.from,
         target: e.to,
-        animated: true,
-        style: { strokeDasharray: "5 5", transition: "all 0.3s ease" }
+        animated: !isMobile, // disable animated dashes on mobile
+        style: { strokeDasharray: isMobile ? "none" : "5 5" }
       };
     });
 
     setNodes(initialNodes);
     setEdges(initialMappedEdges);
-  }, [data, setNodes, setEdges]);
+  }, [data, isMobile, setNodes, setEdges]);
 
   // Update styles on interaction
   useEffect(() => {
@@ -125,7 +136,7 @@ const GraphViewInner = ({ data, searchQuery, onNodeClick, selectedNode, repoUrl 
         data: { 
           ...node.data,
           label: (
-            <div title={`${nodeId}\nRole: ${analysis.type}`} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
+            <div title={`${nodeId}\nRole: ${analysis.type}`} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '6px' : '10px', fontSize: isMobile ? '10px' : '11px' }}>
               {nodeId.split('/').pop() || nodeId}
             </div>
           ) 
@@ -147,7 +158,7 @@ const GraphViewInner = ({ data, searchQuery, onNodeClick, selectedNode, repoUrl 
         }
       };
     }));
-  }, [data, searchQuery, graphAnalysis, selectedNode, setNodes, setEdges]);
+  }, [data, searchQuery, graphAnalysis, selectedNode, isMobile, setNodes, setEdges]);
 
   // Fetch summary when clicked
   useEffect(() => {
@@ -167,20 +178,20 @@ const GraphViewInner = ({ data, searchQuery, onNodeClick, selectedNode, repoUrl 
         setNodeDetails(prev => prev ? { ...prev, summary: data.error?.message || "Error getting summary." } : prev);
       }
     })
-    .catch((err) => {
+    .catch(() => {
       setNodeDetails(prev => prev ? { ...prev, summary: "Error: Could not load summary." } : prev);
     })
     .finally(() => setLoadingSummary(false));
 
   }, [selectedNode, repoUrl, graphAnalysis]);
 
-  const handleNodeClick = (evt, node) => {
+  const handleNodeClick = useCallback((evt, node) => {
     onNodeClick(node.id);
-  };
+  }, [onNodeClick]);
 
   return (
-    <div className="view-container" style={{ display: 'flex', position: 'relative', width: '100%', height: '100%' }}>
-      <div style={{ flex: 1, position: 'relative' }}>
+    <div className="graph-view-root">
+      <div className="graph-canvas-wrapper">
         <ReactFlow 
           nodes={nodes} 
           edges={edges} 
@@ -188,23 +199,32 @@ const GraphViewInner = ({ data, searchQuery, onNodeClick, selectedNode, repoUrl 
           onEdgesChange={onEdgesChange}
           onNodeClick={handleNodeClick}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: isMobile ? 0.05 : 0.2 }}
+          // Touch-friendly settings
+          panOnScroll={!isMobile}
+          zoomOnPinch={true}
+          zoomOnScroll={!isMobile}
+          panOnDrag={true}
+          preventScrolling={false}
         >
           <Background variant={BackgroundVariant.Dots} color="#888" gap={20} size={1.2} />
         </ReactFlow>
 
-        <div style={{ position: 'absolute', bottom: 20, right: 30, background: 'rgba(20,20,22,0.95)', padding: '15px 20px', borderRadius: '12px', fontSize: '0.85rem', border: '1px solid rgba(255,255,255,0.1)', zIndex: 100 }}>
-          <h4 style={{ margin: '0 0 10px 0', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Legend</h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}><div style={{ width:12, height:12, background:'var(--accent)', borderRadius:'50%' }}></div> Entry / Main</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}><div style={{ width:12, height:12, background:'#10b981', borderRadius:'50%' }}></div> Utility</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}><div style={{ width:12, height:12, background:'#a855f7', borderRadius:'50%' }}></div> Core Logic</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}><div style={{ width:12, height:12, background:'#ef4444', borderRadius:'50%' }}></div> Orphan</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ width:12, height:12, border:'2px solid #f59e0b', borderRadius:'50%' }}></div> High Impact</div>
-        </div>
+        {/* Hide legend on mobile to save space */}
+        {!isMobile && (
+          <div style={{ position: 'absolute', bottom: 20, right: 30, background: 'rgba(20,20,22,0.95)', padding: '15px 20px', borderRadius: '12px', fontSize: '0.85rem', border: '1px solid rgba(255,255,255,0.1)', zIndex: 100 }}>
+            <h4 style={{ margin: '0 0 10px 0', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Legend</h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}><div style={{ width:12, height:12, background:'var(--accent)', borderRadius:'50%' }}></div> Entry / Main</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}><div style={{ width:12, height:12, background:'#10b981', borderRadius:'50%' }}></div> Utility</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}><div style={{ width:12, height:12, background:'#a855f7', borderRadius:'50%' }}></div> Core Logic</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}><div style={{ width:12, height:12, background:'#ef4444', borderRadius:'50%' }}></div> Orphan</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ width:12, height:12, border:'2px solid #f59e0b', borderRadius:'50%' }}></div> High Impact</div>
+          </div>
+        )}
       </div>
 
       {selectedNode && nodeDetails && (
-        <div style={{ width: '380px', background: 'var(--bg-panel)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <div className={`node-detail-panel ${isMobile ? 'mobile-panel' : ''}`}>
           
           <div style={{ padding: '20px 24px 10px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>

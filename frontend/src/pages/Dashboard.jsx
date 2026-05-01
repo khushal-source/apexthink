@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Network, MessageSquare, GitBranch, Activity, CheckCircle, Search, FileText, BookOpen, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchRepoData, fetchHistory, fetchScore } from '../services/api';
 
-// Import our split components
-import RepoGraph from '../components/RepoGraph';
-import ChatPanel from '../components/ChatPanel';
-import LearningPath from '../components/LearningPath';
-import GitTimeline from '../components/GitTimeline';
-import CodeTracer from '../components/CodeTracer';
-import QualityScore from '../components/QualityScore';
+// Lazy-load heavy components so they don't block initial render
+const RepoGraph = lazy(() => import('../components/RepoGraph'));
+const ChatPanel = lazy(() => import('../components/ChatPanel'));
+const LearningPath = lazy(() => import('../components/LearningPath'));
+const GitTimeline = lazy(() => import('../components/GitTimeline'));
+const CodeTracer = lazy(() => import('../components/CodeTracer'));
+const QualityScore = lazy(() => import('../components/QualityScore'));
+
+const TabLoader = () => <div className="loader-container"><div className="spinner"></div></div>;
 
 export default function Dashboard() {
   const [searchParams] = useSearchParams();
@@ -89,22 +91,30 @@ export default function Dashboard() {
     if (loadingRepo) return <div className="loader-container"><div className="spinner"></div>Loading Repo... This might take a while for big ones.</div>;
     if (repoError) return <div className="empty-state"><h3>Error</h3><p>{repoError}</p></div>;
 
+    let content;
     switch (activeTab) {
       case 'graph':   
-        return <RepoGraph data={repoData} searchQuery={searchQuery} onNodeClick={handleNodeClick} selectedNode={selectedFile} repoUrl={repoUrl} />;
+        content = <RepoGraph data={repoData} searchQuery={searchQuery} onNodeClick={handleNodeClick} selectedNode={selectedFile} repoUrl={repoUrl} />;
+        break;
       case 'chat':    
-        return <ChatPanel repoUrl={repoUrl} messages={chatMessages} setMessages={setChatMessages} searchGraph={setSearchQuery} />;
+        content = <ChatPanel repoUrl={repoUrl} messages={chatMessages} setMessages={setChatMessages} searchGraph={setSearchQuery} />;
+        break;
       case 'onboarding':
-        return <LearningPath repoUrl={repoUrl} data={repoData} onNodeClick={(nodeId) => { handleNodeClick(nodeId); setActiveTab('graph'); }} />;
+        content = <LearningPath repoUrl={repoUrl} data={repoData} onNodeClick={(nodeId) => { handleNodeClick(nodeId); setActiveTab('graph'); }} />;
+        break;
       case 'history': 
-        return <GitTimeline history={historyData} loadingHistory={loadingHistory} />;
+        content = <GitTimeline history={historyData} loadingHistory={loadingHistory} />;
+        break;
       case 'trace':   
-        return <CodeTracer repoUrl={repoUrl} selectedFile={selectedFile} onNodeClick={(nodeId) => { handleNodeClick(nodeId); setActiveTab('graph'); }} />;
+        content = <CodeTracer repoUrl={repoUrl} selectedFile={selectedFile} onNodeClick={(nodeId) => { handleNodeClick(nodeId); setActiveTab('graph'); }} />;
+        break;
       case 'score':   
-        return <QualityScore scoreData={scoreData} loadingScore={loadingScore} />;
+        content = <QualityScore scoreData={scoreData} loadingScore={loadingScore} />;
+        break;
       default:        
-        return <RepoGraph data={repoData} searchQuery={searchQuery} onNodeClick={handleNodeClick} selectedNode={selectedFile} repoUrl={repoUrl} />;
+        content = <RepoGraph data={repoData} searchQuery={searchQuery} onNodeClick={handleNodeClick} selectedNode={selectedFile} repoUrl={repoUrl} />;
     }
+    return <Suspense fallback={<TabLoader />}>{content}</Suspense>;
   };
 
   return (
